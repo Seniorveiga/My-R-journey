@@ -1,0 +1,103 @@
+---
+title: "Activity Data Treatment with R (30/03/2024)"
+output:
+  pdf_document: default
+  html_notebook: default
+  html_document: default
+---
+
+## Activity to treat and load data in R
+
+### Activity A
+
+-   Create a DataFrame from the following vectors:
+
+```{r}
+X <- c(1,2,3,1,4,5,2)
+Y <- c(0,3,2,0,5,9,3)
+```
+
+-   Installing package dplyr
+
+```{r}
+#install.packages("dplyr")
+```
+```{r}
+dfA <- data.frame(X,Y)
+dfA
+```
+-   Delete duplicates using an adequate R function `help(unique)`
+```{r}
+#We use unique for this part.
+dfA <- unique(dfA)
+dfA
+```
+
+-   Introduce a name for the rows. They will be: "CA","SE","MA","BA","VA"
+```{r}
+rownames(dfA) <- c("CA","SE","MA","BA","VA")
+dfA
+```
+-   Create a new Z column which is the sum of the first two columns divided by the first one.
+```{r}
+dfA["Z"] <- (dfA["X"] + dfA["Y"])/dfA["X"]
+#dfA$z <- NULL
+dfA
+```
+-   Change the X value from province BA by 2
+```{r}
+dfA["BA","X"] <- 2
+dfA
+```
+-   Select regions which Y value is less than 4
+```{r}
+dfA[dfA$Y < 4,]
+```
+
+-   Create a factor that says if it is a city from the coast or not (C or I) and add it as a column.
+```{r}
+costa <- c("C","I","C","I","C")
+dfA["coast"] <- costa
+dfA
+```
+
+### Activity B
+
+-   Load the dataset from the URL <http://archive.ics.uci.edu/ml/machine-learning-databases/autos/imports-85.data> having in consideration that missing values are "?" `url <- "http://archive.ics.uci.edu/ml/machine-learning-databases/autos/imports-85.data"`. If the URL do not work, do it as a local file called `imports-85.csv`.
+```{r}
+url <- "http://archive.ics.uci.edu/ml/machine-learning-databases/autos/imports-85.data"
+dfB <- read.table(url,header = FALSE, sep = ",", na.strings = "?")
+dfB
+```
+
+-   Make a summary of the DataFrame.
+```{r}
+summary(dfB)
+```
+
+-   Which are the DataFrame dimensions?
+```{r}
+dim(dfB)
+```
+-   Inspect the data, which type is each class? Extract the distinct values that takes each factor.
+```{r}
+sapply(dfB, class)
+```
+-   Obtain the proportion of missing values by column using sum and is.na and an apply(with nrow).
+```{r}
+apply(apply(dfB,2,is.na),2,sum)
+```
+-   Modify the first column moving it to the 0-5 range.
+```{r}
+dfB["V1"] <- dfB["V1"] + 2
+dfB["V1"]
+```
+-   Give a mean of the values from the first column compared to the number of doors of the car.
+```{r}
+tapply(dfB$V1, dfB$V6, mean)
+```
+-   Get the Audi cars which have four doors and their V13 column is less than 55.
+```{r}
+library(dplyr)
+filter(dfB, dfB$V3 =='audi' & dfB$V6 =='four' & dfB$V13 < 55)
+```
