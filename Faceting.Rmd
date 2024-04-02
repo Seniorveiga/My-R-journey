@@ -1,0 +1,113 @@
+---
+title: "Application of faceting technique."
+output: html_notebook
+---
+
+This is a first approach to the faceting in R. I have already use it in Python so you can see my work there. Nevertheless, as the way ggplot is constructed and it is a bit different to use I have considered a good idea to show how faceting can be done on other ways, which could lead to faster o more intuitive ideas in R.
+
+# Faceting
+
+Consist in the agrupation of the DataFrame in factors and divide the graphic depending on the groups with the purpose of detecting patterns that depend of categoric variables.
+
+```{r}
+libs <- c("ggplot2")
+lapply(libs, require, character.only = T)
+```
+
+# Faceting example I: Cars gasoline use
+
+```{r}
+data(mpg)
+head(mpg)
+str(mpg)
+```
+
+We create colour graphics depending on the factors:
+
+```{r}
+library(ggplot2)
+
+#Depending on vehicle manufacturer
+ggplot(mpg, aes(x=displ, y=hwy)) +
+    geom_point(aes(colour = manufacturer))
+
+# Depending on vehicle class
+ggplot(mpg, aes(x=displ, y=hwy)) + 
+    geom_point(aes(colour = class))
+```
+
+Then we can apply facting depending on the type of vehicle we have.
+
+Thanks to facting we clarify differences between cylinders and consume associated to the type of vehicle it is. Then, we find that pick-ups have more fuel consume than the same cylinders in vehicles that have less weight. That is due to, while having 2 cylinders, they rarely reach 20 miles per gallon, medium-size vehicles reach around 28 miles per gallon with the same cylinders.
+
+```{r}
+ggplot(mpg, aes(x=displ, y=hwy)) + 
+    geom_point(aes(colour = manufacturer)) +
+    facet_grid(rows = vars(class))
+
+ggplot(mpg, aes(x=displ, y=hwy)) + 
+    geom_point(aes(colour = manufacturer)) +
+    facet_wrap(~ class, scales = "free")
+```
+
+It could be useful also to find straight linear regressions.
+
+```{r}
+canvas = ggplot(mpg, aes(x = displ, y = hwy)) 
+canvas + geom_point(aes(color = manufacturer)) + stat_smooth(method = lm, se = F) #adding linear reg.
+```
+
+Thanks to faceting we can see that the reality is that the behaviour of the vehicle in reality depends of the vehicle type. We can see every subgraphic from the faceting is has almost no deviation.
+
+```{r}
+canvas + geom_point(aes(color = manufacturer)) + stat_smooth(method = lm, se = F) + facet_grid(class ~ .)
+```
+
+# Example Dataset II: Tips
+
+We will see in this example that the approach of grouping data should be approached based on a certain criteria. In the previous case the savings of the cars was really influenced by the vehicle type.
+
+We will see that some variables do not provide information abour patterns.
+
+```{r}
+library(reshape2)
+head(tips)
+str(tips)
+```
+First we draw the general scatterplot that relates the bill with the tip.
+
+```{r}
+cor_bill_tips <- ggplot(tips, aes(x = total_bill, y = tip/total_bill)) + geom_point(shape = 1)
+cor_bill_tips
+```
+Then we see if it related in any form will the sex of the person that was paying, where we see that the outliers of men´s side tend to bring bigger bills:
+```{r}
+cor_bill_tips + facet_grid(sex ~.)
+```
+In vertical:
+```{r}
+cor_bill_tips + facet_grid(.~sex)
+```
+We see that there are some differences but there are no relevant factors appart from the male outliers, this means we cannot conclude anything abour possible patterns.
+
+But, if we divide also by days, we can see that both Saturdays and Sundays increase softly and they make greater tips.
+
+```{r}
+cor_bill_tips + facet_grid(day~sex)
+
+```
+If we explore, lastly, about smokers:
+```{r}
+hist_bills <- ggplot(tips, aes(x = total_bill)) + geom_histogram(binwidth = 2, colour = "white")
+hist_bills
+
+#hist by smoker and sex
+hist_bills + facet_grid(smoker ~sex)
+
+#hist by smoker and sex
+hist_bills + facet_grid(smoker ~sex, scales = "free_y")
+
+
+```
+The last graphic helps us to have a greater perspective as it respects the length depending on the bill, but the previous ones are not factorizing properly due to the same length.
+
