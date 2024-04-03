@@ -1,0 +1,122 @@
+---
+title: "ACTIVIDAD 2 - UD2"
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document: default
+---
+
+# Activity with the Titanic Dataset
+Carga el dataset **titanic** con el comando y haz un sumario
+```{r}
+install.packages("titanic")
+data("titanic_train")
+df <- titanic::titanic_train
+head(df)
+str(df)
+```
+- Transform the variables that are factors in factors. If they are ordinal, then use *ordered* to create ordered factors. Remember to use lapply.
+
+First we see which variables are factors:
+```{r}
+summary(df)
+head(df) #Categories: Survived, Pclass, Sex, SibSp,Embarked
+```
+```{r}
+#is.numeric(df$Pclass)
+table(df$Embarked)
+```
+
+Let´s transform the above columns in factors:
+```{r}
+df$Survived <- as.factor(df$Survived)
+df$Pclass <- factor(df$Pclass, ordered = TRUE, levels = c(1,2,3))
+df$Sex <- as.factor(df$Sex)
+df$SibSp <- as.factor(df$SibSp)
+df$Embarked <- as.factor(df$Embarked)
+head(df)
+```
+
+- Represent in a plot the age vs the fare, and in a second plot the same, but with the Class Key in which they travelled. Represent it with faceting by *Sex* and *Embarked*.
+
+We call the library ggplot2 that we used before in order to make the graphics.
+```{r}
+library(ggplot2)
+ggplot(df, aes(x = Age, y = Fare)) + geom_point(shape = 1)
+```
+Most of the people paid between 0-50 dollars and had an age between 20-40 years old. Nevertheless, it is not rare to pay up to 100 dollars for a ticket. Everything about that range are considered outliers, some of them reaching up to 500 dollars.
+
+If we would do a further analysis, we would discover that the people who paid bigger quantities were people who had reserved several cabins or were premium cabins.
+
+- Draw a boxplot about *Age* group by *Sex*.
+```{r}
+ggplot(df, aes(x = Age, y = Sex)) + geom_boxplot(aes(color = Sex)) + ggtitle("Age by sex groups.")
+```
+Men tended to be a little older, even with some outliers between the age group of 70-80 years.
+The main idea that we extract from this graphic is that both men and women where there within all the age ranges as the first and second decile are included in the whiskers and are not considered outliers.
+
+- Draw a barplot representing the survival in each *Pclass*, coloring bars depending on it.
+```{r}
+ggplot(data = df,aes(x = Pclass, y = Survived, color = Pclass)) + geom_bar(stat = 'identity') + ggtitle("Representation of survival in PClasses")
+```
+We can deduce from this graphic that the class which had more survivors was the third class. Nevertheless, second class passengers were the most unlucky ones.
+
+- Draw the survival expectation depending of *Sex*, what can you extract from this information?
+```{r}
+ggplot(data = df, aes(x = Sex, fill = Survived)) +
+      geom_histogram(position = 'identity',stat = 'count', filled = 'black')
+```
+Men sacrificed themselves in order to save women and child.
+
+- Draw survival depending of the *Pclass* category, what can you appreciate?
+```{r}
+ggplot(data = df, aes(x = Pclass, fill = Survived)) +
+      geom_histogram(position = 'identity',stat = 'count', filled = 'black')
+```
+Most of the people that died it the Titanic were passengers in third class.
+
+- Crea un histograma de *Age*, ¿qué observas?
+```{r}
+ggplot(data = df, aes(x = Age)) +
+      geom_histogram(position = 'identity',stat = 'count')
+```
+I is a right-tailed distributed histogram, with most of the people between 16 and 40 years old.
+This makes sense as long as we saw the price of the tickets counts is more common in the 
+range of 20-40 years old.
+
+- Create a data grouping with `dplyr` of *Sex* and *Pclass*. Make summaries of the mean, counts and median.
+What could you say of the results? Are there enough samples to extract conclusions in all categories created when you combine age and classes?
+
+```{r}
+library(dplyr)
+
+by_sex_age <- df %>% group_by(Sex, Pclass)
+by_sex_age
+
+
+```
+From factor to numeric.
+```{r}
+#class(df$SibSp)
+
+by_sex_age$SibSp <-as.character(by_sex_age$SibSp)
+by_sex_age$SibSp <-as.numeric(by_sex_age$SibSp)
+by_sex_age$SibSp
+```
+
+```{r}
+by_sex_age %>% summarise(
+  mean_age = mean(Age, na.rm = TRUE),
+  median_age = median(Age, na.rm = TRUE),
+  count_age = length(Age),
+  mean_fare = mean(Fare, na.rm = TRUE),
+  median_fare = median(Fare, na.rm = TRUE),
+  count_fare = length(Fare),
+  mean_siblings = mean(SibSp, na.rm = TRUE),    #Transformed
+  median_siblings = median(SibSp, na.rm = TRUE),
+  count_siblings = length(SibSp)
+)
+```
+We can make some deductions from the male part of the dataset but not from the female part as the quantity of data is not as big as we thought. Nevertheless, we can make some hypothesis tests around 5% to validate or invalidate possible conclusions that we extract from the grouping.
+
+
