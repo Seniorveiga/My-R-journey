@@ -1,0 +1,415 @@
+---
+title: "UD3 N01"
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document:
+    latex_engine: xelatex
+---
+
+# Prob distros in R
+
+The distributions in R have the functions described in the notes followed by the name in their syntax.
+To each function name given by R a prefix is added:
+
+- "d": for the density function (pdf in continuous variable) or probability mass function (pmf in discrete variable).
+- "p": for the cumulative distribution function (cdf)
+- q": for the quantile function (qf)
+- r": to generate random numbers according to the corresponding law.
+
+We denote the distributions by X.
+
+## Bernouilli distribution
+
+It takes the values 0 (failure) and 1 (success). The probability of success P(X=1) is equal to the parameter `p` of the distribution. 
+
+It is denoted as `Bernouilli(p)`
+
+```{r}
+# Bernoulli´s distro, a type of binomial
+
+# P(X=1) in a Bernoulli with success of 70% cases
+dbinom(1, 1,0.7)
+# P(X=0) in a Bernoulli with success of 70% cases
+dbinom(0, 1,0.7)
+# Cummulative distribution function in a Bernoulli(0.7)
+pbinom(0, 1,0.7)
+pbinom(1, 1,0.7)
+# Quantile function
+qbinom(0,1, 0.7)
+qbinom(1,1, 0.7)
+qbinom(0.3,1, 0.7)
+qbinom(0.31,1, 0.7)
+qbinom(0.5,1, 0.7)
+# Generate random values that follows a Bernoulli
+rbinom(10,1, 0.7)
+rbinom(1,1, 0.7)
+rbinom(5,1, 0.7)
+```
+
+## Binomial distribution
+
+It is denoted by `Binomial(n, p)` where `n` is the number of experiments and `p` the probability of success.
+
+```{r}
+# x, q: Vector of values
+# p: Probability vector.
+# n: Number of observations
+# size: Number of trials (must be zero or more).
+# prob: Probability of success in each trial.
+# log, log.p: Boolean parameter, if TRUE, probabilities p are given as log(p).
+# lower.tail: Boolean parameter, if TRUE (default), the probabilities are P[X ≤ x], otherwise P[X ≤ x].
+# otherwise, P[X > x].
+
+# P(X=3) for a Binomial(10,0.5)
+dbinom(3, 10, 0.5)
+# P(X=6) for a Binomial(10,0.5)
+dbinom(6, 10, 0.5)
+# P(X=2,1,0) for a Binomial(10,0.5)
+dbinom(c(2, 1, 0), 10, 0.5)
+# P(X<=2) for a Binomial(10,0.5)
+sum(dbinom(c(0, 1, 2), 10, 0.5))
+# Which is the same as pbinom!!
+pbinom(2,10,0.5)
+
+# P(X>2) for a Binomial(10,0.5)
+pbinom(2,10,0.5, lower.tail=F)
+
+# Sum of P(X<=2) + P(X>2) = 1
+pbinom(2,10,0.5) + pbinom(2,10,0.5, lower.tail=F)
+
+# Probability here is the sample sample so prob is 1
+pbinom(10,10,0.5) 
+
+# X values that have a 90% of happening, in Binomial (10, 0.5)
+qbinom(c(0.90), 10, 0.5)
+
+# X values that have a 95% of happening, in Binomial (10, 0.5)
+qbinom(c(0.95), 10, 0.5)
+# 2 random umbers in Binomial (10, 0.5)
+rbinom(2,10,0.5)
+# 9 random numbers in Binomial (10, 0.5)
+rbinom(9,10,0.5)
+
+# dev.off()
+# histogram of 500 random values following a Binomial (10, 0.6)
+# let's remember what these values mean:
+# we generate 500 values, each value is the result of running 10 Bernouilli experiments with p=0.6 and then a count is made of how many have come out 1.
+# i.e. a value of 6 means that by running 10 times Bernouilli's experiments 6 values have come out 1
+hist(rbinom(500,10,0.6))
+```
+
+### Samples Binomials
+
+Suppose that the probability of having a broken unit in the assembly line es 0.05
+
+```{r}
+hist(rbinom(500,10,0.05))
+```
+
+
+- If the set of finished units constitutes a set of independent tests: what is the probability that among 10 units 2 are found to be defective?
+```{r}
+dbinom(2,10,0.05)  # Only 7.46% of being broken
+dbinom(0,10,0.05)
+dbinom(1,10,0.05)
+```
+
+- And a maximum of 2 broken out of 10?
+```{r}
+pbinom(2,10,0.05)  # 2 elements or less
+#dbinom(2,10,0.05) + dbinom(0,10,0.05) + dbinom(1,10,0.05) THE SAME!!
+```
+
+- what is the probability that at least one is found to be defective?
+```{r}
+1-pbinom(0,10,0.05) #Failure probability for at least one bulb
+```
+
+- You want to know an estimate of how many defective units there are in 99% of the cases, 
+What is this maximum?
+```{r}
+qbinom(0.99,10,0.05)
+```
+
+- If 10000 units are taken, what is the expected value of defective units?
+```{r}
+mean(rbinom(20000,10000,0.05))
+```
+
+
+## Poisson´s Distribution
+
+It´s named after `Po($\lambda$)` where $\lambda$ is the ocurrency quantity in the time interval of the variable.
+```{r}
+# dpois(x, lambda, log = F); Devuelve resultados de la función de densidad.
+# ppois(q, lambda, lower.tail = T, log.p = F); Devuelve resultados de la función de distribución acumulada.
+# qpois(p, lambda, lower.tail = T, log.p = F); Devuelve resultados de los cuantiles de la Poisson.
+# rpois(n, lambda); Devuelve un vector de valores aleatorios que siguen una distribución de Poisson.
+# Con:
+#   x: Vector de valores (Valores enteros positivos).
+#   q: Vector de valores
+#   p: Vector de probabilidades.
+#   n: Números de valores aleatorios a devolver.
+#   lambda: Vector de medias (valor no negativo).
+#   log, log.p: Parámetro booleano, si es TRUE, las probabilidades p se ofrecen como log(p).
+#   lower.tail: Parámetro booleano, si es TRUE (por defecto), las probabilidades son P [X ≤ x], de lo contrario, P [X > x]
+
+# Calcular la P(X = 1) de una Poisson(3)
+dpois(1, 3)
+# Calcular un vector con la P(X = 1) y P(X = 8) de una Poisson(3)
+dpois(c(1,8), 3)
+# Calcular la P(X <= 3) de una Poisson(3)
+ppois(3,3)
+# Calcular la P(X > 3) de una Poisson(3)
+ppois(3, 3, lower.tail=F)
+# Calcular el valor de la variable aleatoria X, dada la probabilidad 0.985
+# En una distribución Poisson(3), ¿qué valor tiene una probabilidad acumulada de 0.985?
+qpois(0.985, 3)
+# En efecto, comprobamos que la función cuantil es la inversa (en la práctica) de la acumulada, ya que 
+ppois(qpois(0.985, 3),3) # devuelve aproximadamente la probabilidad inicial pasada a la función cuantil 
+
+hist(rpois(300,5))
+```
+
+CONSIDERATIONS:
+
+Let´s understand its parameter $\lambda$ from its mass function (pmf).
+
+It gives the probability of the occurrence of a particular event. Recall that Poisson's pmf(k) of $\lambda$ = dpois(k, $\lambda$), therefore, dpois(k, $\lambda$) represents the probability with which the value k occurs in a Poisson $\lambda$ distribution.
+
+- $\lambda$ is the number of times that the event is expected to occur in a given time interval.
+
+- Therefore, we will have to constantly rescale the $\lambda$ parameter according to the given time interval.
+
+### Sample Poisson
+
+An electronic company sees that the number of components that fail before achieving 100 working hours follow a Poisson random variable.The number of failures during 100 hours is 8.
+
+If we consider an interval of 100 hours, $\lambda$ would be 8.
+
+For an interval of 50 hours the value of $\lambda$ would change again becoming 100/50 = 2, so 8/2 = 4 as our $\lambda$ value.
+
+- If we consider the same distribution in an interval of 25 hours (i.e. a quarter of the initial one), then the number of expected cases will be 8/4 = 2, therefore the $\lambda$ parameter of our *same* $\lambda$ distribution adjusted to this new time interval will be 2.
+
+- In order to complete the rest of the situations exposed in the activity, we have that for an interval of 50 hours (i.e. half), $\lambda$ will be 8/2 = 4, and finally, for 125 hours (125/100 = 1.25), we will have a $\lambda$ of 8 * 1.25 = 10.
+
+- Probability of failure of 1 component in 25 hours?
+
+```{r}
+dpois(1,2)
+```
+
+- And the failure being less or equal than 2 in 50 hours?
+```{r}
+ppois(2,4)
+```
+
+- Probability of at least 10 failures in 125 hours?
+```{r}
+ppois(10,10, lower.tail = FALSE)
+```
+- How many hours would we need to guarantee the client to assure him that in 90% of cases that´s true?
+
+```{r}
+qexp(0.1, 8/100)
+```
+
+
+
+## Distribución Normal
+
+Se denota por `N($\mu$, $\sigma$)` donde $\mu$ es la media y $\sigma$ es la desviación típica (raíz cuadrada de la varianza) de la distribución.
+
+```{r}
+# dnorm(x, mean = 0, sd = 1, log = F); Devuelve resultados de la función de densidad.
+# pnorm(q, mean = 0, sd = 1, lower.tail = T, log.p = F); Devuelve resultados de la función de distribución
+# acumulada.
+# qnorm(p, mean = 0, sd = 1, lower.tail = T, log.p = F); Devuelve resultados de los cuantiles de la Normal.
+# rnorm(n, mean = 0, sd = 1); Devuelve un vector de valores normales aleatorios.
+# Con:
+# x, q: Vector de valores
+# p: Vector de probabilidades.
+# n: Números de observaciones.
+# mean: Vector de medias. Por defecto, su valor es 0.
+# sd: Vector de desviación estándar. Por defecto, su valor es 1.
+# log, log.p: Parámetro booleano, si es TRUE, las probabilidades p son devueltas como log (p).
+# lower.tail: Parámetro booleano, si es TRUE (por defecto), las probabilidades son P [X ≤ x], de lo contrario, P [X > x].
+
+# Calcular la P(Z>1) de una N(0,1)
+pnorm(1, mean = 0, sd = 1, lower.tail = F)
+# Calcular la P(-2<Z<2) de una N(0,1)
+pnorm(c(2), mean = 0, sd = 1) - pnorm(c(-2), mean = 0, sd = 1)
+# Calcular la P(0<Z<1.96) de una N(0,1)
+pnorm(1.96, mean = 0, sd = 1) - pnorm(0, mean = 0, sd = 1)
+# Calcular la P(Z<=z)=0,5793 de una N(0,1)
+qnorm(0.5793, mean = 0, sd = 1)
+# Calcular la P(Z>150) de una Normal de media 125 y la desviación estándar 50.
+pnorm(150, mean = 125, sd = 50, lower.tail = F)
+
+# Histograma generado por 5000 valores aleatorios de una normal de media 3 y desviación estándar 2
+hist(rnorm(5000,3,2))
+```
+## Distribución Exponencial
+
+
+
+Se denota por `Exponencial($\lambda$)` donde $\lambda$ indica la misma tasa de la Poisson entre los eventos cuyos tiempos intermedios mide la distribución.
+
+Es decir, dada una distribución de Poisson($\lambda$), la exponencial estudia los tiempos que se dan entre los sucesos de la Poisson.
+
+Trabajamos con `Exponencial(2)` simulando que sea la duración de una máquina funcionando hasta su avería.
+```{r}
+# Histograma generado por 5000 valores aleatorios de una exponencial de lambda 2
+hist(rexp(5000,2)) 
+
+#los valores negativos tienen densidad 0
+dexp(-4, 2)
+#los valores positivos tienen densidades decrecientes
+dexp(1, 2)
+dexp(5, 2)
+#su cdf, vemos que es creciente
+pexp(1, 2)
+pexp(3, 2)
+#su qf, averiguamos cuánto dura la máquina que dura más que el 90% de las máquinas
+qexp(0.9, 2)
+#simulamos la duración de 7 máquinas
+rexp(7, 2)
+#calculamos la media y varianza de una simulación con 100 máquinas
+#observa que la media se aproxima a 0.5
+mean(rexp(100, 2))
+var(rexp(100,2))
+```
+
+### Sample
+
+A service of technical assistance in the road has seen that in the mornings of weekends the call number they receive is around 3 calls per hour. A technician starts it´s work at 8 A.M. Supposing that calls are done independently and constantly:
+
+- Probability of receiving the first call before 8:15?
+```{r}
+pexp(15,0.05)
+```
+- Which is the probability of receiving 4 calls en the first 2 hours of it´s work?
+- ¿Cuál es la probabilidad de que reciba 4 llamadas en las dos primeras horas de su jornada de trabajo?
+```{r}
+pexp()
+```
+
+- Si lleva 10 minutos sin recibir ninguna llamada, ¿cuál es la probabilidad de que reciba una nueva llamada en menos de 15 minutos?
+
+
+Para realizar esta actividad recordamos la profundización que realizamos el concepto del parámetro lambda en la actividad relativa a la distribución de Poisson:
+
+- lambda es el número de veces que se espera que ocurra el suceso en un intervalo de tiempo dado
+
+- Tendremos que estar constantemente reescalando el parámetro lambda según el intervalo temporal dado
+
+### SOLUCIÓN:
+
+Apliquemos estos conceptos en el caso particular de esta actividad.
+
+- La tasa lambda es 3 cada hora. Si contemplamos como intervalo temporal 1 minuto (i.e. 1/60 horas), entonces nuestro lambda = 3/60 = 0.05 y, como nos preguntan por 15 minutos, tomaremos x = 15 (tengamos en cuenta que ahora no estamos midiendo el número de sucesos de Poisson sino el tiempo que transcurre entre la aparición de estos).
+  - Se debe utilizar la función de probabilidad acumulada (esta modela que la primera llamada sea antes del minuto 1, 2 ...)
+
+- En la segunda pregunta se pone el foco en el nº de sucesos por lo que utilizamos Poisson
+
+- Para la tercera pregunta el planteamiento es el mismo, pero no queremos que sea durante los 15 primeros minutos, es por eso que restamos la probabilidad acumulada de los 15 primeros minutos
+
+```{r}
+# Antes de comenzar, se recomienda crear un histograma de la distribución, ya que visualizar los datos ayuda mucho a su interpretación
+hist(rexp(5000,0.05)) # utilizamos como intervalo temporal 1 minuto
+hist(rexp(5000,3)) # utilizamos como intervalo temporal 1 hora (vemos que son las mismas gráficas pero con el eje X en minutos u horas), fíjate por ejemplo para 0.5 horas o 30 minutos, es el mismo valor
+
+#¿Cuál es la probabilidad de que reciba la primera llamada antes de las 8:15?
+# intervalo temporal de 1 minuto --> lambda = 3 *(1/60) = 0.005
+# consideramos 15 minutos
+pexp(15,0.05)
+#¿Cuál es la probabilidad de que reciba 4 llamadas en las dos primeras horas de su jornada de trabajo?
+# intervalo temporal de 2 horas --> lambda = 3 * 2 = 6
+# consideramos 4 sucesos
+dpois(4, 6)
+#Si lleva 10 minutos sin recibir ninguna llamada, ¿cuál es la probabilidad de que reciba una nueva llamada en menos de 15 minutos?
+pexp(25,0.05) - pexp(15,0.05)
+```
+
+### Actividad de refuerzo
+
+- Genera una secuencia de 50 lanzamientos de moneda (0 ó 1)
+- Una "carrera" es una secuencia de unos seguidos ó de ceros seguidos. ¿Cuál es la carrera más larga en la secuencia generada?
+- Genera una aplicación que calcule este valor dado un vector con 50 ceros y unos.
+- Simula mil experimentos con 50 lanzamientos de moneda cada uno y aproxima el valor de las probabilidades de cada una de las longitudes usando la regla de Laplace. Representa el histograma de las probabilidades.
+- Obtén una aproximación de la media del valor de la carrera más larga en la secuencia.
+
+Antes de comenzar el ejercicio introduciremos la *regla de Laplace*
+
+- La regla de Laplace afirma que si todos los resultados de un experimento son equiprobables, entonces la probabilidad de un suceso A es:
+$P(A) = \frac{\text{Casos favorables a A}}{\text{Total de casos posibles}}$
+
+- Ejemplo: Tirando un dado, la probabilidad de sacar los valores 5 o 6 es 2/6 = 0.33 ya que:
+  - Casos favorables a A: valores 5, 6
+  - Total de casos posibles: valores 1, 2, 3, 4, 5, 6
+
+### SOLUCIÓN:
+
+```{r}
+# - Genera una secuencia de 50 lanzamientos de moneda (0 ó 1)
+carrera <-rbinom(50,1,0.5)
+
+# - Una "carrera" es una secuencia de unos seguidos ó de ceros seguidos. ¿Cuál es la carrera más larga en la secuencia generada?
+# - Genera una aplicación que calcule este valor dado un vector con 50 ceros y unos.
+
+max_carrera=0
+c=0
+
+for (i in 1:length(carrera)){
+  if (carrera[i]==1){
+    c = c+1
+  }else{c=0}
+  max_carrera=max(c(c,max_carrera))
+}
+
+# - Simula mil experimentos con 50 lanzamientos de moneda cada uno y aproxima el valor de las probabilidades de cada una de las longitudes usando la regla de Laplace. Representa el histograma de las probabilidades.
+
+
+# Implementamos una función que dado un número de lanzamientos, genera una secuencia y calcula su máxima carrera
+experimento <- function(n_lanzamientos){
+  carrera <- rbinom(n_lanzamientos,1,0.5)
+  for (i in 1:length(carrera)){
+    if (carrera[i]==1){
+      c = c+1
+    }else{c=0}
+    max_carrera=max(c(c,max_carrera))
+  }
+  return(max_carrera)
+}
+
+experimento(50) # replica lo hecho en el apartado anterior, pero esta vez mediante una función
+
+simula <- function(n_experimentos,n_lanzamientos){
+  resultados <- c()
+  for (i in 1:n_experimentos){
+  resultados <-append(resultados,experimento(n_lanzamientos))}
+  return(list(resultados=resultados,media=mean(resultados)))
+}
+
+simulaMil <- simula(1000,50)
+
+# Calculamos histograma de cada uno de los valores (conteo de cuantas veces aparece cada uno)
+hist(simulaMil$resultados)
+
+# Aplicamos la regla de Laplace para obtener una aproximiación de las probabilidades de cada valor
+
+# tabla de frecuencias absolutas
+table(simulaMil$resultados) 
+
+# tabla de frecuencias relativas (i.e. aplicamos la regla de Laplace, dividimos el número observaciones del valor entre el número total de observaciones)
+# obtenemos así una aproximación de las probabilidades de cada valor
+table(simulaMil$resultados)/length(simulaMil$resultados) 
+
+# - Obtén una aproximación de la media del valor de la carrera más larga en la secuencia.
+simulaMil$media
+```
+
+
+
+
