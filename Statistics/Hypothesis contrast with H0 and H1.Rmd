@@ -1,0 +1,141 @@
+---
+title: "Inferencia estadística - Contrastes de hipótesis y poder estadístico"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_notebook: default
+  html_document: default
+---
+
+# Applying different hypothesis tests
+
+## Hypothesis contrast for sample means
+
+### Contrast over sample mean
+
+We will need to use $\mathit{t}$-Student for this case.
+
+We have a dataset about lizards:
+
+```{r}
+lizard <- c(6.2, 6.6, 7.1, 7.4, 7.6, 7.9,
+            8, 8.3, 8.4, 8.5, 8.6,
+           + 8.8, 8.8, 9.1, 9.2, 
+           9.4, 9.4, 9.7, 9.9, 10.2, 10.4, 10.8,
+           + 11.3, 11.9)
+hist(lizard)
+```
+
+Empleando el test t de Student con el siguiente comando obtenemos un p-valor muy pequeño. En consecuencia la hipótesis nula de que la media es 0 queda rechazada. Además nos da un intervalo de confianza al 95 sobre el parámetro de la media muestral.
+
+The hypothesis contrast base case is that mean is 0, due to the base on "Normal" distribution. So, the hypothesis are formalized as:
+
+-   Null Hypothesis or $H_{0}$: $\mu$ = 0.
+-   Alternative Hypothesis or $H_{1}$: $\mu$ \<\> 0.
+-   Level of significance $\alpha$ = 0.05.
+
+We need to use the function "t.test()" which will give us a low p-value. Consequently, $H_{0}$ is rejected as our $\mathit{p}$-value is lower than $\alpha$, then we hae a 95% of statistical significance that our mean is not 0 *in our sample*.
+
+```{r}
+t.test(lizard)
+```
+
+Notice that for more confidence in our hypothesis we would need to change the value of $\alpha$ to a bigger value.
+
+We can modify that level:
+
+```{r}
+t.test(lizard, conf.level = 0.99) # Increase to 99%
+```
+
+As the $\mathit{p}$-value is lower than 0.01, we reject definitely $H_{0}$.
+
+But, we can define our own mean using the parameter "mu" in the "t.test()" function and do it in a lateral or bilateral mode:
+
+```{r}
+t.test(lizard, mu=8.4,conf.level = 0.9) #bilateral with mean 8.4,90% and H1: mu!=8.4 -> mu = 8.4
+t.test(lizard, mu=8.4,alternative = "g" ,conf.level = 0.9) #lateral, H1: mu>8.4 -> mu <= 8.4
+t.test(lizard, mu=8.4,alternative = "l" ,conf.level = 0.9) #lateral, H1: mu<8.4 -> mu >= 8.4
+```
+
+In these cases the $\mathit{p}$-values are bigger than 0.05 so $H_{0}$ remains, which means that mean is:
+
+-   Equal to 8.4
+-   More or equal than 8.4
+-   Less or equal than 8.4
+
+Lets see the atributes of `t.test`:
+
+```{r}
+a <- t.test(lizard, mu=8.4,conf.level = 0.9) 
+a$conf.int
+a$p.value
+a$statistic
+```
+
+### Hypothesis contrast for mean´s difference between 2 normal samples.
+
+In this case we will do a contrast between means in 2 normal samples.
+
+-   $H_{0}: \mu_x - \mu_y \>= 0$
+-   $H_{1}: \mu_x - \mu_y < 0$
+
+In the first case, we will be supposing that we have different variances, so we need to do a Welch´s test.
+
+```{r}
+x <- rnorm(200,3,2)
+y <- rnorm(200,4,1)
+t.test(x,y,alternative = "l")   # Lower
+```
+
+As the $\mathit{p}$-value is really small, we accept $H_{1}$.
+
+In the second case we suppose normal sample, independent and with the same variance. Is because of this that we can use the $\mathit{t}$-test for two samples.
+
+```{r}
+x <- rnorm(200,3,2)
+y <- rnorm(200,2,2)
+t.test(x,y,alternative = "l",var.equal = TRUE )
+```
+
+As the $\mathit{p}$-value is 1 and is bigger than $\alpha$, we accept $H_{0}: mu_x - mu_y \>= 0$.
+
+## Statistical power analysis
+
+The statistical power analysis relates the experiment to the statistical power by means of two lines of study.
+
+A power analysis using Student's t-distribution is shown below. This technique requires normality in the samples and that they are independent.
+
+-   The first question is, given some statistical characteristics such as $\alpha$, $\pi$ or the mean of the samples to be considered, what should be the sample size N of these samples to obtain these values?
+
+Suppose we want to perform a study with laboratory mice in which we want to investigate the relationship between feeding. We prepare two types A and B, and the weight of the mouse. After performing our study, we expect that the mean weight of the mice with feeding A will be 25 grams, while with feeding B it will be 22 grams. We also want a significance of 0.05 and a statistical power of 0.80.
+
+We will perform a power analysis based on Student's t-distribution that will tell us the sample size of each of the samples.
+
+As a result of the analysis, we see that N = 3, so the experiment should have 3 mice taking type A feeding and 3 mice taking type B feeding.
+
+```{r}
+power.t.test(delta = (25-22), # diferencia entre las medias esperadas
+             power = 0.80, # poder estadístico deseado
+             sig.level = 0.05, # nivel de significación deseado
+             type = "two.sample", # tipo de test
+             alternative = "two.sided" 
+             )
+```
+
+-   The second line of study is the reverse question, given statistical characteristics, not including $\pi$, and sample size N, **what statistical power will the experiment have**?
+
+Continuing with the example of the mice, let us assume that the experiment will be performed with a sample of 5 mice per sample (10 mice in total), keeping the other parameters specified above except the statistical power at the same values.
+
+Next, we will perform the statistical power analysis to show us the expected statistical power in this experiment.
+
+As a result of the analysis, we see that the expected statistical power is 0.98.
+
+```{r}
+power.t.test(n = 5, # número de observaciones por grupo
+             delta = (25-22), # diferencia entre las medias esperadas
+             sig.level = 0.05, # nivel de significación deseado
+             type = "two.sample", # tipo de test
+             alternative = "two.sided" 
+             )
+```
