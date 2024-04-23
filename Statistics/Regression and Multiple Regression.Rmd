@@ -1,0 +1,276 @@
+---
+title: "Regression"
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Regresión lineal múltiple
+
+We take a dataset of savings by country
+```{r}
+# install.packages("faraway")
+library(faraway)
+data(savings)
+help(savings)
+attach(savings)
+head(savings)
+```
+We create a model of sving taxes over some variables, and we see that significant variables are marked with a star on the side, which is the value of their p-value. More stars, better. Also, you can see that the p-value associated to the contrast test F is less than 0.05 so our model is better than a constant regression model.
+```{r}
+savings.lm <- lm(sr ~ pop15 + pop75 + dpi, savings) #Linear Model, predict sr, depending on pop15, pop75 and dpi
+savings.lm
+summary(savings.lm)
+```
+We create a module with all the variables.
+
+Again, variables with a lower p-value come with stars. The more stars the lower. We see that the p-value associated to the F-contrsat test is less than 0.05 so our model is better than a regression model that is constant. We can see it in the last line that says F-statistic.
+
+Finally we look at the adjusted R^2, which is bigger than the previous one, then, being better than the previous.
+```{r}
+savings.lm <- lm(sr ~., savings) #In this case it includes DDPI variable. 
+savings.lm
+summary(savings.lm)
+
+```
+Due to their p-values, only pop15 and ddpi seem explicative enough, together with the intercept term:
+```{r}
+coefficients(savings.lm)
+```
+When we are in front of a model with multiple variables, we ask ourselves if we can avoid these parts, taking only the relevant predictors.
+
+Can we predict it from a set of variable? What about pop75 and dpi?
+
+We create 2 nested models, one with all the variables and another with only the 2 most relevant in order to perform an ANOVA test betwee them, based on Snedecor test, which says if pop75 and dpi variables generate a better model or not.
+
+In this case the restricted model is the one that only considers [pop15,ddpi] and the other the one that takes the four variables.
+
+```{r}
+savings.lm.1 <- lm(sr ~ pop15 + pop75 + dpi + ddpi, savings)
+savings.lm.2 <- lm(sr ~ pop15 + ddpi, savings)
+
+summary(savings.lm.1)
+summary(savings.lm.2)
+```
+
+The $H_{0}$ is considering the restricted model while $H_{1}$ is the complete model:
+
+- $H_{0}$: $beta_pop75 = beta_dpi = 0$
+- $H_{1}$: $\beta_{pop75} \neq 0$ ó $\beta_{dpi} \neq 0$
+
+This is equivalent to consider that the $H_{1}$ is that any of the coeficients is null.
+```{r}
+anova(savings.lm.1,savings.lm.2)
+```
+As we see, we specify the test, anova(), and then, both populations, where we obtain a $\mathit{p}$-value bigger than 0.05 so we use the restricted model. You can see that the ANOVA returns Df = -2, so it signals that the second model counts with 2 less variables.
+
+We analyse the residues with a histplot and a QQ plot and a normal distro. This will put some light about the biases in our model, which is fundamental as some coeficients such as adjusted $R^{2}$ do not capture this deviations. 
+
+Lets see if they follow a normal distro centered in 0.
+
+```{r}
+# Residues
+library(ggplot2)
+
+residues <- as.data.frame(savings.lm.2$residuals, )
+
+# Histplot of residues with density curve
+ggplot(residues, aes(x=savings.lm.2$residuals)) + 
+    geom_histogram(aes(y=after_stat(density)),      
+                   binwidth=2,
+                   colour="black", fill="blue") +
+    geom_density(alpha=.2, fill="red")  # Density curve filler
+```
+Lets compare the residue sample distribution with a normal distribution. Most of the points are in the line, which indicates that the distribution of residues samples can approximate to a normal disro.
+
+```{r}
+# Gráfico QQ: contrastando la distribución de la muestra de los residuos con una distribución normal
+qqnorm(savings.lm.2$residuals)
+qqline(savings.lm.2$residuals)
+```
+
+## Complete multiple regression analysis
+
+The data bank contains information about newborns and their mothers in 1236 observations.
+Determine for each one of the predictors if we can consider that the correspind coefficient is null.
+
+```{r}
+# install.packages("UsingR")
+library("UsingR")
+# https://rdrr.io/cran/UsingR/man/babies.html
+
+rm(babies)
+data("babies")
+attach(babies)
+apply(is.na(babies),2,sum) # We see that it does not have space for lacking values
+str(babies)
+```
+Table:
+```{r}
+help(babies)
+head(babies,30)
+```
+As we mentioned previously, this dataset did not have missing values -as usual but rather had reserved values- that represented them.
+We declare the missing data:
+```{r}
+babies$wt[wt == 999]
+babies$sex[sex == 9] <- NA
+babies$wt[wt == 999] <- NA
+babies$parity[parity == 99] <- NA
+babies$race[race == 99] <- NA
+babies$age[age == 99] <- NA
+babies$ed[ed == 9] <- NA
+babies$ht[ht == 99] <- NA
+babies$wt1[wt1 == 999] <- NA
+babies$smoke[smoke == 9] <- NA
+babies$time[time == 99] <- NA
+babies$time[time == 98] <- NA
+number[number == 98 | number == 99] <- NA
+
+# Lacking values percentage by column
+apply(is.na(babies),2,sum) / nrow(babies)*100
+```
+
+We regard the column´s composition:
+```{r}
+str(babies)
+unique(outcome)
+unique(sex)
+unique(pluralty)
+```
+We delete constant columns as they do not have any repercussion in prediction:
+```{r}
+babies[, c("id","outcome","sex","pluralty")] <- NULL
+```
+
+We transform into factors all columns that are categorical:
+```{r}
+
+fact.cols <- c("race","ed","drace","dage","ded","marital","smoke","time","number")
+babies[fact.cols] <- lapply(babies[fact.cols], factor)
+str(babies)
+```
+
+
+We check the values
+```{r}
+
+apply(is.na(babies),2,sum)
+unique(babies$pluralty) # devuelve NULL ya que es una de las variables constantes que hemos eliminado
+```
+Imputation of lacking values with MissForest
+https://stat.ethz.ch/education/semesters/ss2012/ams/paper/missForest_1.2.pdf
+
+Imputing values to missing values is a very relevant field in the world of data science. In this case, a method based on the Random Forest algorithm typical of Machine Learning is used.
+```{r}
+#install.packages("missForest")
+```
+
+```{r}
+library(missForest)
+#imputamos valores
+babies.imp <- missForest(babies,maxiter = 20,ntree = 500,variablewise = T)
+babies.imp$OOBerror
+apply(babies,2,var,na.rm=TRUE)
+apply(is.na(babies.imp$ximp),2,sum)
+```
+
+Replace "babies" value by the imputed table:
+```{r}
+babies <- babies.imp$ximp
+```
+
+We look at the correlations between variables wt, age and ht
+```{r}
+cor(babies$age,babies$wt)
+cor(babies$ht,babies$wt)
+```
+
+Suppose that we want to predict the **weight of the baby** using as predicting variables gestation, ht, age and wt1, they are:
+- The time of gestation
+- The mother´s height
+- The mother´s age
+- The mother´s weight previous to the birth.
+
+a) Make the proper adjustment.
+b) Evaluate the determination´s coefficient.
+c) Determine for each predictor if we can consider that the corresponding coefficient is null.
+d) Contrat the hypothesis that all coefficients except the constant are null.
+
+--------
+
+Adjustment with variables gestation, ht, age, wt1.
+
+Knowing their $\mathit{p}$-values we observe that the ht variable is the one with more predictive power, followed by wt1 and "Intercept". On the other hand, the coefficients of gestation and age variables can be considered null as their $\mathit{p}$-values > 0.05.
+
+Thus, the $\mathit{p}$-value of F is less than 0.05 so our model is better than a constant regression model.
+
+```{r}
+mod <- lm(wt~ht+gestation+age+wt1,data=babies)
+summary(mod)
+```
+d) See if is better our model or a constant model with all variables being null.
+
+We do an ANOVA test based on Snedecor between a onsant regression model and ours. We see that the $\mathit{p}$-value < 0.05 so we accept $H_{1}$ and one of our coefficients should not be null.
+
+```{r}
+#no podemos considerar que todos los coeficientes sean nulos salvo la constante
+anova(lm(wt~1,data=babies),mod)
+```
+
+We see that the relevant ones are ht, wt1 and intercept, which seem to be significantly predictive. For this reason, we can do an ANOVA between the initial model with all the variables and a model with only these three variables.
+
+If we see the summary we see the stars on variables are big so it is lower than 0.05, confirming their predictive potential. Also, the $\mathit{p}$-value associated is lower than 0.05 for the Snedecor test, which confirm that our model is better than a constant one.
+
+```{r}
+mod_final <- lm(wt~ht+wt1,data=babies)
+summary(mod_final)
+```
+Finally, we do the ANOVA test between both models.
+
+- $H_{0}$: $\beta_{gestation}$ = $\beta_{age}$ = 0
+- $H_{1}$: $\beta_{gestation} \neq$ 0 ó $\beta_{age} \neq$ 0
+
+We have that $\mathit{p}$-value > 0.05 so we keep $H_{0}$, so we remain with the reduced model.
+```{r}
+anova(mod_final,mod)
+```
+**Residues analysis**
+
+We analyse the residues through an histogram and a QQ plot with a normal distribution as our reference. We will include a density curve that approaches it.
+
+We see that the residues follow a normal distro centeres around 0. Nevertheless, they have several negative errors
+
+```{r}
+# Residues analysis
+library(ggplot2)
+
+residuos_ej2 <- as.data.frame(mod_final$residuals )
+
+# Histogram with density curve
+ggplot(residuos_ej2, aes(x=mod_final$residuals)) + 
+    geom_histogram(aes(y=..density..),      
+                   binwidth=2,
+                   colour="black", fill="blue") +
+    geom_density(alpha=.2, fill="red")  # Density curve filler
+```
+
+
+Comparison betwee residues and a normal distribution.
+
+We see that most of the points are in the line, which means that our residues sample distribution can approach to a normal. However, this overstimation peak is detected in the QQ Plot as the smaller quantiles that are outstanding from the line.
+
+```{r}
+# QQ Plot: Residues graphic compared to the normal
+qqnorm(mod_final$residuals)
+qqline(mod_final$residuals)
+```
+
+
+
+
+
+
+
