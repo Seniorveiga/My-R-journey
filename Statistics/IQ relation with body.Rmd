@@ -107,36 +107,58 @@ df2
 ```
 
 - which is the best model that explains "lqsa"?
+
+To pick the best model, we use the algorithm AIC together with the "stepwise" criteria so we evaluate the models inside the limits that we define.
+
+- Lower limit = Constant function.
+- Upper limit = Model with all the variables.
+
+We first apply the algorithm with the backwards case.
+
 ```{r}
-df2.lm <- lm(lpsa ~ lcavol + lweight + age + lbph + svi + lcp + gleason + pgg45,df2)
-df2.lm
-summary(df2.lm)
+fit1 <- lm(lpsa~lcavol+lweight+age+lbph+svi+lcp+gleason+pgg45,data=df2)
+fit0 <- lm(lpsa~1,data=df2)
+library(MASS)
+stepAIC(fit1,direction="backward")
 ```
-We see that the most relevant variables are "lcavol", lweight" and "svi". Also, are questionable the uses of "lbph" and "age".
-We can do an ANOVA test to compare both models. Lets create the second one:
+
+Now we execute it "forward":
 ```{r}
-df2.lmalt <- lm(lpsa ~ lcavol + lweight + age + lbph + svi,df2)
-df2.lmalt
+stepAIC(fit0,direction="forward",scope=list(upper=fit1,lower=fit0))
 ```
-And now we perform the ANOVA test.
+Finally we do it with "both" directions:
 
-The $H_{0}$ is considering the restricted model while $H_{1}$ is the complete model:
-
-- $H_{0}$: $\beta_{lcp} = \beta_{gleason} = \beta_{pgg45} = 0$
-- $H_{1}$: $\beta_{lcp} \neq 0$ or $\beta_{gleason} \neq 0$ or $\beta_{pgg45} \neq 0$
-
-This is equivalent to consider that the $H_{1}$ is that any of the coeficients is null.
 ```{r}
-anova(df2.lm, df2.lmalt)
+step <- stepAIC(fit0,direction="both",scope=list(upper=fit1,lower=fit0))
+step$call
 ```
-As we see that the $\mathit{p}$-value is bigger than 0.05, we discard the complete model and we keep the restricted model with 5 variables.
 
+So the model is based lineally with "lcavol", "lweight", "svi", "lbph" and "age".
+We make a summary of the model:
+```{r}
+summary(lm(formula = lpsa ~ lcavol + lweight + svi + lbph + age, data = df2))
+coef(step)
+anova(lm(formula = lpsa ~ lcavol + lweight + svi + lbph, data = df2),
+      lm(formula = lpsa ~ lcavol + lweight + svi + lbph + age, data = df2))
+```
+We see here that p-value is 0.12 so we will keep the null hypothesis that is the one withour "Age". Nevertheless, when we perform the "extractAIC" we find that:
+```{r}
+extractAIC(lm(formula = lpsa ~ lcavol + lweight + svi + lbph , data = df2),scale=0)
+```
+It is better than the other models than using the Stepwise. 
+
+Notice that the method of AIC is better as it is a measure that is objective about the performance while the other one is not a white/black answer, as the nearer to the p-value, the more we doubt about the results.
+
+Shape of the residues:
+```{r}
+par(mfrow=c(1,2))
+hist(step$residuals)
+qqnorm(step$residuals)
+qqline(step$residuals)
+```
 - Confidence interval for the coefficients.
 
-We see that the $\mathit{p}$-value is in every variable less than 0.1 so our confidence interval for our regression model is 0.1.
-Confidence intervals:
-$lcavol: [0.56434 - 0.08783, 0.56434 + 0.08783]$
-$lweight: [0.622020 - 0.200897, 0.622020 + 0.200897]$
-$age: [-0.021248 - 0.011084, -0.021248 + 0.011084]$
-$lbph: [0.096713 - 0.057913, 0.096713 + 0.057913]$
-$svi: [0.761673 - 0.241176, 0.761673 + 0.241176]$
+```{r}
+coefficients(step) # coeficientes del modelo
+confint(step) # intervalos de confianza para cada coeficiente
+```
