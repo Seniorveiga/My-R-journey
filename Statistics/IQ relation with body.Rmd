@@ -1,0 +1,142 @@
+---
+title: "IQ and other relations with the body"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_notebook: default
+  html_document: default
+---
+
+## Section A
+
+Does the PIQ depend of other measures?
+```{r}
+df <- read.csv("dfact4.csv")
+head(df)
+```
+Lets do a multiple linear regression. We can use the lm function and predict the variable PIQ dependind on the others:
+```{r}
+df.lm <- lm(PIQ~Brain + Height + Weight,df)
+df.lm
+summary(df.lm)
+```
+We see that is mostly non-related with weight but the brain and height has some correlation with it.
+
+Nevertheless, even if height seems to have a really low $\mathit{p}$-value, we see that for our dataset, the brain
+is correlated positively with a coefficient around 2 and a standard error around 1/2.
+
+On the other hand, Height has a negative correlation of -2.732 and a standard error of 1.229 which is really high variation.
+This, together with his high variation makes it a less reliable source for the PIQ than the Brain variable.
+
+Furthermore, the adjusted R^2 is really low so this means the phenomena is not explained well through the predictors.
+The standard error is aproximately 19.79 and the variationis 22.59 so there´s a humongous variation between the predictions.
+
+As we see in the valur "Multiple R-Squared" only about 29% of variables are explained through brain length.
+```{r}
+coefficients(df.lm)
+```
+
+- Which of the predictors explain something about the variability of the intellectual coefficient?
+
+Mainly the brain, as it is correlated positively and has a strong lower $\mathit{p}$-value that backs up the hypothesis that for bigger brains we will have more IQ.
+
+- Which is the effect on cerebral length, after taking in consideration the weight and height?
+
+We can introduce a polinomical factor to increase the accuracy of the model in the variable "Brain":
+
+```{r}
+df.exp_model <- lm(PIQ~Brain + I(Brain^3) + Height + Weight,df)
+summary(df.exp_model)
+
+```
+As we see we have included Brain^3 as another variable, and the Adjusted R-squared has gotten worse so the explanation capability has worsen.
+
+- Give me a confidence interval for the coefficients.
+
+We delete the variables that are not relevant (weight) and we calculate the confidenece intervals:
+```{r}
+df.lm3 <- lm(PIQ ~Brain + Height, df)
+summary(df.lm3)
+confint(df.lm3)
+```
+Using the function "$\mathit{confint}$" we obtain that the confidence intervals are:
+
+$Intercept: [-2.14,224,69]$
+$Brain: [0.95,3.17]$
+$Height: [-4.74,-0.71]$
+
+- Which is the IQ confidence interval for the predictor values: Brain length = 95, Height = 70, Weight = 180?
+
+We do not consider inn our equation the weiht of the person as it worsen the model´s accuracy.
+```{r}
+new_data <- data.frame(Brain = 95, Height = 70)
+predict(df.lm3,new_data, interval = "predict") 
+#If we want to make predictions, we use interval = "Predict"
+#Similar to conf intervals but wider and more predictive power for a single variable.
+```
+
+- Do residues follow a normal distro? Make the histogram representations and the convenient quantile-quantile graphics.
+```{r}
+df.lm3$residuals
+par(mfrow=c(1,2))
+hist(df.lm3$residuals)
+qqnorm(df.lm3$residuals)
+qqline(df.lm3$residuals)
+```
+How do we know if the residues follow a normal distribution?
+We perform a Shapiro-Wilk test.
+
+```{r}
+shapiro.test(df.lm3$residuals)
+```
+As the $\mathit{p}$-value is more than 0.05, we accept $H_{0}$ and it follows a normal distribution.
+
+
+## Section B
+
+- Load `prostate.csv`
+```{r}
+df2 <- read.csv("prostate.csv")
+head(df2)
+```
+
+- Delete the train column
+```{r}
+df2$train <- NULL
+df2
+```
+
+- which is the best model that explains "lqsa"?
+```{r}
+df2.lm <- lm(lpsa ~ lcavol + lweight + age + lbph + svi + lcp + gleason + pgg45,df2)
+df2.lm
+summary(df2.lm)
+```
+We see that the most relevant variables are "lcavol", lweight" and "svi". Also, are questionable the uses of "lbph" and "age".
+We can do an ANOVA test to compare both models. Lets create the second one:
+```{r}
+df2.lmalt <- lm(lpsa ~ lcavol + lweight + age + lbph + svi,df2)
+df2.lmalt
+```
+And now we perform the ANOVA test.
+
+The $H_{0}$ is considering the restricted model while $H_{1}$ is the complete model:
+
+- $H_{0}$: $\beta_{lcp} = \beta_{gleason} = \beta_{pgg45} = 0$
+- $H_{1}$: $\beta_{lcp} \neq 0$ or $\beta_{gleason} \neq 0$ or $\beta_{pgg45} \neq 0$
+
+This is equivalent to consider that the $H_{1}$ is that any of the coeficients is null.
+```{r}
+anova(df2.lm, df2.lmalt)
+```
+As we see that the $\mathit{p}$-value is bigger than 0.05, we discard the complete model and we keep the restricted model with 5 variables.
+
+- Confidence interval for the coefficients.
+
+We see that the $\mathit{p}$-value is in every variable less than 0.1 so our confidence interval for our regression model is 0.1.
+Confidence intervals:
+$lcavol: [0.56434 - 0.08783, 0.56434 + 0.08783]$
+$lweight: [0.622020 - 0.200897, 0.622020 + 0.200897]$
+$age: [-0.021248 - 0.011084, -0.021248 + 0.011084]$
+$lbph: [0.096713 - 0.057913, 0.096713 + 0.057913]$
+$svi: [0.761673 - 0.241176, 0.761673 + 0.241176]$
